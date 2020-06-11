@@ -1,0 +1,59 @@
+Features : 
+	p_1st_in : Number of 1st serve in by player
+	o_1st_in : Number of 1st serve in by against player
+	p_sv_pt : Number of serve by player 
+	o_sv_pt : Number of serve by against player
+	p_1st_won : Number of 1st serve in by player won by player
+	o_1st_won : Number of 1st serve in by against player won by player
+	p_2nd_won : Number of 2nd serve in by player won by player
+	o_2nd_won : Number of 2nd serve in by against player won by player
+	p_ace : Number of ace by player
+	o_ace : Number of ace by against player
+	p_df : Number of double fault by player
+	o_df : Number of double fault by against player
+	p_bp_sv : Number of break point save on serve by player
+ 	p_bp_fc : Number of break point on serve for player
+ 	o_bp_sv : Number of break point won on return by player
+	p_bp_fc : Number of break point on return for player
+
+Calculate features : 
+	First serve success percentage : FS
+		p_1st_in / p_sv_pt
+
+	Winning on first serve percentage : W1SP
+		p_1st_won / p_1st_in
+
+	Winning on second serve percentage : W2SP
+		p_2nd_won / (p_sv_pt - p_1st_in)
+
+	Winning on return percentage : WRP
+
+
+	Percentage of all points won : TPW
+		
+
+	Percentage of all matches won : TMW
+		number of matches won / number of matches played
+
+	Average number of aces per game : ACES
+		p_ace/(number of matches)
+
+	Average number of double faults per game : DF
+		p_df/(number of matches)
+
+	Average number of unforced errors per game : UE
+
+
+	Average number of winners per game : WIS
+
+
+	Percentage of break points won : BP
+		(p_bp_sv + o_pb_sv) / (p_bp_fc + o_bp_fc) 
+
+New features :
+	Overall winning on serve percentage : WSP 		par joueur : WSP = W1SP · FS + W2SP(1 - FS)	WSP = WSP1 - WSP2
+	Advantage when serving : SERVEADV			par joueur : SERVEADV1 = WSP1 - WRP2		SERVEADV = SERVEADV1 - SERVEADV2
+	Player completeness : COMPLETE				par joueur : COMPLETEi = WSPi · WRPi
+
+
+
