@@ -19,7 +19,7 @@ We want to create some features that may be useful to our algorithm.
 
 - Creating
 
-# Data Exploratory Analysis
+# Exploratory Data Analysis
 
 We want to understand which feature seems important for our model.
 
