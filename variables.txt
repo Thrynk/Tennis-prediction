@@ -69,7 +69,7 @@ Calculate features :
 			(p_bp_sv + o_pb_sv) / (p_bp_fc + o_bp_fc) 
 
 New features :
-	Overall winning on serve percentage : WSP 		par joueur : WSP = W1SP · FS + W2SP(1 - FS)	WSP = WSP1 - WSP2
+	Overall winning on serve percentage : WSP 		par joueur : WSPi = W1SPi · FSi + W2SPi(1 - FSi)	WSP = WSP1 - WSP2
 	Advantage when serving : SERVEADV			par joueur : SERVEADV1 = WSP1 - WRP2		SERVEADV = SERVEADV1 - SERVEADV2
 	Player completeness : COMPLETE				par joueur : COMPLETEi = WSPi · WRPi
 	
