@@ -1,4 +1,14 @@
-from tqdm.notebook import tqdm
+import numpy as np
+from datetime import datetime
+from tqdm import tqdm
+import pandas as pd
+import os
+
+train_df = pd.read_csv(os.path.abspath('../input/cleaned-2007-2017.csv'))
+
+train_df['datetime'] = train_df['date'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y'))
+
+train_df_gt_2008 = train_df[train_df['datetime'] > '2008-01-01']
 
 # player 1 columns
 p_fs_column = []
