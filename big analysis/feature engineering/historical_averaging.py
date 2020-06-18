@@ -3,12 +3,65 @@ from datetime import datetime
 from tqdm import tqdm
 import pandas as pd
 import os
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 train_df = pd.read_csv(os.path.abspath('../input/cleaned-2007-2017.csv'))
 
 train_df['datetime'] = train_df['date'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y'))
 
 train_df_gt_2008 = train_df[train_df['datetime'] > '2008-01-01']
+
+# We want to find surface correlations to give different weights to past matches depending on surface correlation :
+surfaces = [('H','H'),('H','C'),('H','G'),('C','H'), ('C','C'), ('C','G'),('G','H'), ('G','C'), ('G','G')]
+
+matches_won_by_surface = {'H':[], 'C':[], 'G':[]}
+
+for surface in tqdm(['H','C','G'],desc='surfaces'):
+    for player_id in tqdm(train_df['player_id'].unique(),desc='players ' + surface):
+        player_matches = train_df[(train_df['player_id'] == player_id) & (train_df['surface'] == surface)]
+        p_matches_won_surface = player_matches['p_matches'].sum() / player_matches['p_matches'].count()
+        matches_won_by_surface[surface].append(p_matches_won_surface)
+        
+surface_df = pd.DataFrame({
+                            'H': np.array(matches_won_by_surface['H']), #[~np.isnan(np.array(matches_won_by_surface['H']))],
+                            'C': np.array(matches_won_by_surface['C']), #[~np.isnan(np.array(matches_won_by_surface['C']))],
+                            'G': np.array(matches_won_by_surface['G']), #[~np.isnan(np.array(matches_won_by_surface['G']))]
+                            'player_id': train_df['player_id'].unique()
+                        })
+
+surface_df = surface_df.dropna()
+
+H_column = []
+C_column = []
+G_column = []
+
+for a,b in surfaces:
+    correlation = 0
+    numerator_correlation = 0
+    n_minus_1 = len(surface_df.index) - 1
+    std_a = surface_df[a].std()
+    std_b = surface_df[b].std()
+    for player_index in surface_df.index:
+        numerator_correlation += (surface_df[a][player_index] - surface_df[a].mean()) *  (surface_df[b][player_index] - surface_df[b].mean())
+    correlation = numerator_correlation / (n_minus_1 * std_a * std_b)
+    if(a == 'H'):
+        H_column.append(correlation)
+    elif(a == 'C'):
+        C_column.append(correlation)
+    elif(a == 'G'):
+        G_column.append(correlation)
+        
+surface_correlations = pd.DataFrame({
+                'H': H_column,
+                'C': C_column,
+                'G': G_column
+             }, index=['H', 'C', 'G'])
+    
+fig, ax = plt.subplots()
+sns.heatmap(surface_correlations, annot=True)
+ax.set_ylim(len(surface_correlations), 0)
+plt.show()
 
 # player 1 columns
 p_fs_column = []
@@ -24,6 +77,8 @@ p_bp_won_column = []
 # Combining statistics
 p_wsp_column = []
 p_completeness_column = []
+
+p_h2h_column = []
 
 p_number_of_matches_used_column = []
 
@@ -42,18 +97,24 @@ o_bp_won_column = []
 o_wsp_column = []
 o_completeness_column = []
 
+o_h2h_column = []
+
 o_number_of_matches_used_column = []
 
 # Combining statistics from the two players
 p_serve_adv_column = []
 o_serve_adv_column = []
+direct_column = []
 
 # matches to include (for development, no need for final dataset generation)
-number_of_matches_to_include = 2000
+# number_of_matches_to_include = 2000
 
-pbar = tqdm(total=train_df_gt_2008.head(n=number_of_matches_to_include).shape[0])
+# time discounting coefficient
+time_discounting = 0.8
 
-for index, row in train_df_gt_2008.head(n=number_of_matches_to_include).iterrows():
+pbar = tqdm(total=train_df_gt_2008.shape[0])
+
+for index, row in train_df_gt_2008.iterrows():
     # filter dataset to keep only player matches prior to current match
     filtered_dataset = train_df[
         (train_df['datetime'] < datetime.strptime(row['date'], '%d/%m/%Y')) 
@@ -65,28 +126,30 @@ for index, row in train_df_gt_2008.head(n=number_of_matches_to_include).iterrows
     = o_matches = p_ace = p_df = p_sv_gms = p_bp_sv = o_bp_sv = p_bp_fc = o_bp_fc = p_number_of_matches_used = 0
 
     # initialize variable features
-    p_fs = p_w1sp = p_w2sp = p_wrp = p_tpw = p_tmw = p_aces_per_game = p_df_per_game = p_bp_won = p_wsp = p_completeness = np.nan
+    p_fs = p_w1sp = p_w2sp = p_wrp = p_tpw = p_tmw = p_aces_per_game = p_df_per_game = p_bp_won = p_wsp = p_completeness = p_h2h = np.nan
 
     # calculate statistics averaging with time discounting and surface weighting for player 1
     if(filtered_dataset.shape[0] != 0):
         for f_index, f_row in filtered_dataset.iterrows():
-            p_1st_in += f_row['p_1st_in']
-            p_sv_pt += f_row['p_sv_pt']
-            p_1st_won += f_row['p_1st_won']
-            p_2nd_won += f_row['p_2nd_won']
-            o_sv_pt += f_row['o_sv_pt']
-            o_1st_won += f_row['o_1st_won']
-            o_2nd_won += f_row['o_2nd_won']
-            o_sv_pt += f_row['o_sv_pt']
-            p_matches += f_row['p_matches']
-            o_matches += f_row['o_matches']
-            p_ace += f_row['p_ace']
-            p_df += f_row['p_df']
-            p_sv_gms += f_row['p_sv_gms']
-            p_bp_sv += f_row['p_bp_sv']
-            o_bp_sv += f_row['o_bp_sv']
-            p_bp_fc += f_row['p_bp_fc']
-            o_bp_fc += f_row['o_bp_fc']
+            time_diff = row['datetime'].year - f_row['datetime'].year
+            surface_weight = surface_correlations[row['surface']].loc[f_row['surface']]
+            p_1st_in += f_row['p_1st_in'] * (time_discounting ** time_diff) * surface_weight
+            p_sv_pt += f_row['p_sv_pt'] * (time_discounting ** time_diff) * surface_weight
+            p_1st_won += f_row['p_1st_won'] * (time_discounting ** time_diff) * surface_weight
+            p_2nd_won += f_row['p_2nd_won'] * (time_discounting ** time_diff) * surface_weight
+            o_sv_pt += f_row['o_sv_pt'] * (time_discounting ** time_diff) * surface_weight
+            o_1st_won += f_row['o_1st_won'] * (time_discounting ** time_diff) * surface_weight
+            o_2nd_won += f_row['o_2nd_won'] * (time_discounting ** time_diff) * surface_weight
+            o_sv_pt += f_row['o_sv_pt'] * (time_discounting ** time_diff) * surface_weight
+            p_matches += f_row['p_matches'] * (time_discounting ** time_diff) * surface_weight
+            o_matches += f_row['o_matches'] * (time_discounting ** time_diff) * surface_weight
+            p_ace += f_row['p_ace'] * (time_discounting ** time_diff) * surface_weight
+            p_df += f_row['p_df'] * (time_discounting ** time_diff) * surface_weight
+            p_sv_gms += f_row['p_sv_gms'] * (time_discounting ** time_diff) * surface_weight
+            p_bp_sv += f_row['p_bp_sv'] * (time_discounting ** time_diff) * surface_weight
+            o_bp_sv += f_row['o_bp_sv'] * (time_discounting ** time_diff) * surface_weight
+            p_bp_fc += f_row['p_bp_fc'] * (time_discounting ** time_diff) * surface_weight
+            o_bp_fc += f_row['o_bp_fc'] * (time_discounting ** time_diff) * surface_weight
 
         ## Compute features 
 
@@ -142,6 +205,17 @@ for index, row in train_df_gt_2008.head(n=number_of_matches_to_include).iterrows
     p_wsp_column.append(p_wsp)
     p_completeness_column.append(p_completeness)
     
+    ## head to head feature
+    # filter dataset to keep only player matches prior to current match
+    filtered_dataset_h2h = train_df[
+        (train_df['datetime'] < datetime.strptime(row['date'], '%d/%m/%Y')) 
+        & (train_df['player_id'] == row['player_id'])
+        & (train_df['opponent_id'] == row['opponent_id'])
+    ]
+    if(filtered_dataset_h2h.shape[0] != 0):
+        p_h2h = filtered_dataset_h2h['p_matches'].sum() / filtered_dataset_h2h['p_matches'].count()
+    p_h2h_column.append(p_h2h)
+    
 
     # number of matches computed to have stats
     p_number_of_matches_used_column.append(p_number_of_matches_used)
@@ -159,29 +233,31 @@ for index, row in train_df_gt_2008.head(n=number_of_matches_to_include).iterrows
     = o_matches = p_ace = p_df = p_sv_gms = p_bp_sv = o_bp_sv = p_bp_fc = o_bp_fc = o_number_of_matches_used = 0
 
     # initialize variable features
-    o_fs = o_w1sp = o_w2sp = o_wrp = o_tpw = o_tmw = o_aces_per_game = o_df_per_game = o_bp_won = o_wsp = o_completeness = np.nan
+    o_fs = o_w1sp = o_w2sp = o_wrp = o_tpw = o_tmw = o_aces_per_game = o_df_per_game = o_bp_won = o_wsp = o_completeness = o_h2h =  np.nan
 
     # calculate statistics averaging with time discounting and surface weighting for player 2
     if(filtered_dataset.shape[0] != 0):
         for f_index, f_row in filtered_dataset.iterrows():
-            p_1st_in += f_row['p_1st_in']
-            p_sv_pt += f_row['p_sv_pt']
-            p_1st_won += f_row['p_1st_won']
-            p_2nd_won += f_row['p_2nd_won']
-            o_sv_pt += f_row['o_sv_pt']
-            o_1st_won += f_row['o_1st_won']
-            o_2nd_won += f_row['o_2nd_won']
-            o_sv_pt += f_row['o_sv_pt']
-            p_matches += f_row['p_matches']
-            o_matches += f_row['o_matches']
-            p_ace += f_row['p_ace']
-            p_df += f_row['p_df']
-            p_sv_gms += f_row['p_sv_gms']
-            p_bp_sv += f_row['p_bp_sv']
-            o_bp_sv += f_row['o_bp_sv']
-            p_bp_fc += f_row['p_bp_fc']
-            o_bp_fc += f_row['o_bp_fc']
-
+            time_diff = row['datetime'].year - f_row['datetime'].year
+            surface_weight = surface_correlations[row['surface']].loc[f_row['surface']]
+            p_1st_in += f_row['p_1st_in'] * (time_discounting ** time_diff) * surface_weight
+            p_sv_pt += f_row['p_sv_pt'] * (time_discounting ** time_diff) * surface_weight
+            p_1st_won += f_row['p_1st_won'] * (time_discounting ** time_diff) * surface_weight
+            p_2nd_won += f_row['p_2nd_won'] * (time_discounting ** time_diff) * surface_weight
+            o_sv_pt += f_row['o_sv_pt'] * (time_discounting ** time_diff) * surface_weight
+            o_1st_won += f_row['o_1st_won'] * (time_discounting ** time_diff) * surface_weight
+            o_2nd_won += f_row['o_2nd_won'] * (time_discounting ** time_diff) * surface_weight
+            o_sv_pt += f_row['o_sv_pt'] * (time_discounting ** time_diff) * surface_weight
+            p_matches += f_row['p_matches'] * (time_discounting ** time_diff) * surface_weight
+            o_matches += f_row['o_matches'] * (time_discounting ** time_diff) * surface_weight
+            p_ace += f_row['p_ace'] * (time_discounting ** time_diff) * surface_weight
+            p_df += f_row['p_df'] * (time_discounting ** time_diff) * surface_weight
+            p_sv_gms += f_row['p_sv_gms'] * (time_discounting ** time_diff) * surface_weight
+            p_bp_sv += f_row['p_bp_sv'] * (time_discounting ** time_diff) * surface_weight
+            o_bp_sv += f_row['o_bp_sv'] * (time_discounting ** time_diff) * surface_weight
+            p_bp_fc += f_row['p_bp_fc'] * (time_discounting ** time_diff) * surface_weight
+            o_bp_fc += f_row['o_bp_fc'] * (time_discounting ** time_diff) * surface_weight
+            
         ## Compute features 
 
         # first serve sucess percentage
@@ -238,6 +314,17 @@ for index, row in train_df_gt_2008.head(n=number_of_matches_to_include).iterrows
     o_wsp_column.append(o_wsp)
     o_completeness_column.append(o_completeness)
     
+    ## head to head feature
+    # filter dataset to keep only player matches prior to current match
+    filtered_dataset_h2h = train_df[
+        (train_df['datetime'] < datetime.strptime(row['date'], '%d/%m/%Y')) 
+        & (train_df['player_id'] == row['opponent_id'])
+        & (train_df['opponent_id'] == row['player_id'])
+    ]
+    if(filtered_dataset_h2h.shape[0] != 0):
+        o_h2h = filtered_dataset_h2h['p_matches'].sum() / filtered_dataset_h2h['p_matches'].count()
+    o_h2h_column.append(o_h2h)
+    
 
     # number of matches computed to have stats
     o_number_of_matches_used_column.append(o_number_of_matches_used)
@@ -245,6 +332,7 @@ for index, row in train_df_gt_2008.head(n=number_of_matches_to_include).iterrows
     # Combining statistics from the two players
     p_serve_adv_column = (np.array(p_wsp_column) - np.array(o_wrp_column)).tolist()
     o_serve_adv_column = (np.array(o_wsp_column) - np.array(p_wrp_column)).tolist()
+    direct_column = (np.array(p_h2h_column) - np.array(o_h2h_column)).tolist()
     
     # progress
     pbar.update(1)
@@ -260,5 +348,13 @@ result_test_df = pd.DataFrame({'p_fs': p_fs_column, 'p_w1sp': p_w1sp_column, 'p_
                                'o_tpw': o_tpw_column, 'o_tmw': o_tmw_column, 'o_aces_per_game': o_aces_per_game_column,
                                'o_df_per_game': o_df_per_game_column, 'o_bp_won': o_bp_won_column,
                                'o_wsp': o_wsp_column, 'o_completeness': o_completeness_column, 'o_serve_adv': o_serve_adv_column,
+                               'direct': direct_column,
                                'o_number_of_matches_used': o_number_of_matches_used_column
                               })
+result_test_df['player_id'] = train_df_gt_2008['player_id'].tolist()
+result_test_df['opponent_id'] = train_df_gt_2008['opponent_id'].tolist()
+result_test_df['tournament_name'] = train_df_gt_2008['tournament_name'].tolist()
+result_test_df['date'] = train_df_gt_2008['date'].tolist()
+result_test_df['p_matches'] = train_df_gt_2008['p_matches'].tolist()
+
+result_test_df.to_csv(os.path.abspath('../input/featured-2008-2017.csv'), index=False)
