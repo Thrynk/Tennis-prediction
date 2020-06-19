@@ -12,6 +12,8 @@ test_df['datetime'] = test_df['date'].apply(lambda x: datetime.strptime(x, '%d/%
 
 statistics_df_2007_2017 = pd.read_csv(os.path.abspath('../input/cleaned-2007-2017.csv'))
 
+statistics_df_2007_2017['datetime'] = statistics_df_2007_2017['date'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y'))
+
 frames = [statistics_df_2007_2017, test_df]
 statistics_df = pd.concat(frames)
 
