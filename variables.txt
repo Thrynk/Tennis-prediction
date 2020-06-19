@@ -118,5 +118,3 @@ WHERE ms.date >= '2007-01-01' AND ms.date <='2017-12-31'
 
 raw form :
 SELECT ms.match_id, t.name tournament_name, te.season season, ms.tournament_id, ms.date, ms.level, ms.surface, ms.round, ms.best_of, ms.player_id, ms.player_rank, ms.player_elo_rating, ms.opponent_id, ms.opponent_rank, ms.opponent_elo_rating, ms.outcome, ms.minutes, ms.p_1st_in, ms.o_1st_in, ms.p_sv_pt, ms.o_sv_pt, ms.p_1st_won, ms.o_1st_won, ms.p_2nd_won, ms.o_2nd_won, ms.p_ace, ms.o_ace, ms.p_df, ms.o_df, ms.p_bp_sv, ms.o_bp_sv, ms.p_bp_fc, ms.o_bp_fc, ms.p_matches, ms.o_matches, ms.p_sv_gms FROM player_match_stats_v ms LEFT JOIN tournament_event te ON(ms.tournament_event_id=te.tournament_event_id) LEFT JOIN tournament t ON(ms.tournament_id=t.tournament_id) WHERE ms.date >= '2007-01-01' AND ms.date <='2017-12-31'
-
-
