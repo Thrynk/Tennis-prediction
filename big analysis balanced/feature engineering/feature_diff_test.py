@@ -19,6 +19,6 @@ test_df['elo_rating_diff'] = test_df['player_elo_rating'] - test_df['opponent_el
 
 
 test_df = test_df.drop(['p_fs', 'o_fs', 'p_w1sp','o_w1sp','p_w2sp','o_w2sp','p_wrp','o_wrp','p_tpw','o_tpw','p_tmw','o_tmw','p_aces_per_game','o_aces_per_game'
-               ,'p_df_per_game','o_df_per_game','p_bp_won','o_bp_won','p_wsp','o_wsp','p_completeness','o_completeness','p_serve_adv','o_serve_adv'], axis = 1)
+               ,'p_df_per_game','o_df_per_game','p_bp_won','o_bp_won','p_wsp','o_wsp','p_completeness','o_completeness','p_serve_adv','o_serve_adv', 'player_elo_rating', 'opponent_elo_rating'], axis = 1)
 
 test_df.to_csv(os.path.abspath('../input/diff-cleaned-featured-2018.csv'), index=False)
