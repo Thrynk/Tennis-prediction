@@ -1,0 +1,10 @@
+prendre le match dans les 2 sens 
+
+évaluation : pseudo r2 (plus il est élevé mieux c'est)
+voir si l'on ne met trop de variables : critère d'akaike (critère de parcimonie)
+
+surface 0 1 2 3 4
+variable d'interaction multipliez les 2 variables
+
+voir si une variable est significative : p-value
+regarder la magnitude pour voir son importance
