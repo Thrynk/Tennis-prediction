@@ -1,59 +1,120 @@
-Features : 
+Features :
+    match_id
+    tournament_name
+    season
+    tournament_id
+    date
+    level
+    surface
+    round
+    best_of
+    player_id
+    player_rank
+    player_elo_rating
+    opponent_id
+    opponent_rank
+    opponent_elo_rating
+    outcome
+    minutes
+
+Historical Features : 
 	p_1st_in : Number of 1st serve in by player
-	o_1st_in : Number of 1st serve in by against player
+	o_1st_in : Number of 1st serve in by opponent players
 	p_sv_pt : Number of serve by player 
-	o_sv_pt : Number of serve by against player
-	p_1st_won : Number of 1st serve in by player won by player
-	o_1st_won : Number of 1st serve in by against player won by player
-	p_2nd_won : Number of 2nd serve in by player won by player
-	o_2nd_won : Number of 2nd serve in by against player won by player
+	o_sv_pt : Number of serve by opponent players
+	p_1st_won : Number of 1st serve won by player
+	o_1st_won : Number of 1st serve won by opponent players
+	p_2nd_won : Number of 2nd serve won by player
+	o_2nd_won : Number of 2nd serve won by opponent players
 	p_ace : Number of ace by player
-	o_ace : Number of ace by against player
+	o_ace : Number of ace by opponent players
 	p_df : Number of double fault by player
-	o_df : Number of double fault by against player
-	p_bp_sv : Number of break point save on serve by player
- 	p_bp_fc : Number of break point on serve for player
- 	o_bp_sv : Number of break point won on return by player
-	p_bp_fc : Number of break point on return for player
+	o_df : Number of double fault by opponent players
+	p_bp_sv : Number of break points saved on serve by player
+	o_bp_sv : Number of break points won on return by player
+ 	p_bp_fc : Number of break points played on serve by player
+ 	o_bp_fc : Number of break points played on return for player
+	p_matches : Number of matches won by player
+	o_matches : Number of matches lost by player
+	p_sv_gms : Number of serve games played by player
 
 Calculate features : 
-	First serve success percentage : FS
-		p_1st_in / p_sv_pt
+	Historical averaging:
+		First serve success percentage : FS
+			p_1st_in / p_sv_pt
 
-	Winning on first serve percentage : W1SP
-		p_1st_won / p_1st_in
+		Winning on first serve percentage : W1SP
+			p_1st_won / p_1st_in
 
-	Winning on second serve percentage : W2SP
-		p_2nd_won / (p_sv_pt - p_1st_in)
+		Winning on second serve percentage : W2SP
+			p_2nd_won / (p_sv_pt - p_1st_in)
 
-	Winning on return percentage : WRP
+		Winning on return percentage : WRP
+            (o_sv_pt - o_1st_won - o_2nd_won)/o_sv_pt
 
+		Percentage of all points won : TPW
+    		( p_1st_won + p_2nd_won + (o_sv_pt - o_1st_won - o_2nd_won) ) / (p_sv_pt + o_sv_pt)
 
-	Percentage of all points won : TPW
-		
+		Percentage of all matches won : TMW
+			number of matches won / number of matches played
+			(p_matches)/(p_matches + o_matches)
 
-	Percentage of all matches won : TMW
-		number of matches won / number of matches played
+		Average number of aces per game : ACES
+			p_ace/p_sv_gms
 
-	Average number of aces per game : ACES
-		p_ace/(number of matches)
+		Average number of double faults per game : DF
+			p_df/p_sv_gms
 
-	Average number of double faults per game : DF
-		p_df/(number of matches)
-
-	Average number of unforced errors per game : UE
-
-
-	Average number of winners per game : WIS
-
-
-	Percentage of break points won : BP
-		(p_bp_sv + o_pb_sv) / (p_bp_fc + o_bp_fc) 
+		Percentage of break points won : BP
+			(p_bp_sv + o_pb_sv) / (p_bp_fc + o_bp_fc) 
 
 New features :
-	Overall winning on serve percentage : WSP 		par joueur : WSP = W1SP · FS + W2SP(1 - FS)	WSP = WSP1 - WSP2
+	Overall winning on serve percentage : WSP 		par joueur : WSPi = W1SPi · FSi + W2SPi(1 - FSi)	WSP = WSP1 - WSP2
 	Advantage when serving : SERVEADV			par joueur : SERVEADV1 = WSP1 - WRP2		SERVEADV = SERVEADV1 - SERVEADV2
 	Player completeness : COMPLETE				par joueur : COMPLETEi = WSPi · WRPi
+	
+SQL query :
+SELECT
+    ms.match_id,
+    t.name tournament_name,
+    te.season season,
+    ms.tournament_id,
+    ms.date,
+    ms.level,
+    ms.surface,
+    ms.round,
+    ms.best_of,
+    ms.player_id,
+    ms.player_rank,
+    ms.player_elo_rating,
+    ms.opponent_id,
+    ms.opponent_rank,
+    ms.opponent_elo_rating,
+    ms.outcome,
+    ms.minutes,
+    ms.p_1st_in,
+	ms.o_1st_in,
+	ms.p_sv_pt,
+	ms.o_sv_pt,
+	ms.p_1st_won,
+	ms.o_1st_won,
+	ms.p_2nd_won,
+	ms.o_2nd_won,
+	ms.p_ace,
+	ms.o_ace,
+	ms.p_df,
+	ms.o_df,
+	ms.p_bp_sv,
+	ms.o_bp_sv,
+ 	ms.p_bp_fc,
+ 	ms.o_bp_fc,
+	ms.p_matches,
+	ms.o_matches,
+	ms.p_sv_gms
+FROM player_match_stats_v ms
+LEFT JOIN tournament_event te ON(ms.tournament_event_id=te.tournament_event_id)
+LEFT JOIN tournament t ON(ms.tournament_id=t.tournament_id)
+WHERE ms.date >= '2007-01-01' AND ms.date <='2017-12-31'
 
-
-
+raw form :
+SELECT ms.match_id, t.name tournament_name, te.season season, ms.tournament_id, ms.date, ms.level, ms.surface, ms.round, ms.best_of, ms.player_id, ms.player_rank, ms.player_elo_rating, ms.opponent_id, ms.opponent_rank, ms.opponent_elo_rating, ms.outcome, ms.minutes, ms.p_1st_in, ms.o_1st_in, ms.p_sv_pt, ms.o_sv_pt, ms.p_1st_won, ms.o_1st_won, ms.p_2nd_won, ms.o_2nd_won, ms.p_ace, ms.o_ace, ms.p_df, ms.o_df, ms.p_bp_sv, ms.o_bp_sv, ms.p_bp_fc, ms.o_bp_fc, ms.p_matches, ms.o_matches, ms.p_sv_gms FROM player_match_stats_v ms LEFT JOIN tournament_event te ON(ms.tournament_event_id=te.tournament_event_id) LEFT JOIN tournament t ON(ms.tournament_id=t.tournament_id) WHERE ms.date >= '2007-01-01' AND ms.date <='2017-12-31'
