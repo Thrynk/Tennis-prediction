@@ -19,9 +19,13 @@ We handled NA values by dropping records where missing values were essential for
 - **Feature scaling** : we then scaled our features for the Logistic Regression
 - **Feature Engineering** : We computed new statistics as first serve success percentage, winning on first serve percentage, aces, percentage of matches won, and also head to head statistics between players. We then performed feature difference to have one feature for each statistics representing the difference of levels between the 2 players on this statistics.
 - **Feature selection** : We performed recursive feature elimination to keep only the most important features.
+
 ![Recursive feature elimination](/images/rfe.JPG)
+
 ![Recursive feature elmination with logistic regression coefficients](/images/rfe-coefficients.JPG)
+
 - **Modeling** : We got a 64% accuracy, this model didn't outperform our previous model, our features don't seem to bring more information than elo rating.
+
 ![Confusion matrix](/images/confusion_matrix.JPG)
 
 In conclusion, with more time to research really important features, with more time to do exploratory analysis and statistics tests to evaluate our features, we could expect to improve our model.
